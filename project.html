@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영화 소개 사이트 프로젝트</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --canvas:  #0a0d3a;
+  --surface: #1e2353;
+  --blurple: #5865f2;
+  --green:   #35ed7e;
+  --magenta: #ec48bd;
+  --ink:     #ffffff;
+  --muted:   rgba(255,255,255,0.55);
+  --border:  rgba(255,255,255,0.12);
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--canvas); color: var(--ink); }
+body { font-family: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; }
+
+#pb {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: var(--blurple); transition: width .45s ease; z-index: 200;
+}
+
+#track {
+  display: flex;
+  width: calc(100vw * 6);
+  height: 100vh;
+  transition: transform .52s cubic-bezier(.4,0,.2,1);
+}
+
+.slide {
+  width: 100vw; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 72px 80px;
+}
+
+.inner { width: 100%; max-width: 860px; }
+
+/* 네비게이션 */
+.nav {
+  position: fixed; bottom: 36px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px; z-index: 100;
+}
+.nav-btn {
+  background: var(--blurple); color: var(--ink); border: none;
+  padding: 11px 26px; border-radius: 12px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: opacity .18s;
+}
+.nav-btn:hover:not(:disabled) { opacity: .82; }
+.nav-btn:disabled { background: var(--surface); color: var(--muted); cursor: default; }
+.dots { display: flex; gap: 8px; }
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+.dot.on { background: var(--blurple); transform: scale(1.4); }
+
+/* 공통 */
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  color: var(--green); text-transform: uppercase; margin-bottom: 12px;
+}
+.section-title {
+  font-size: 38px; font-weight: 800; line-height: 1.15; margin-bottom: 32px;
+}
+.section-title em { color: var(--blurple); font-style: normal; }
+
+/* ══ 슬라이드 1 — 표지 ══ */
+.cover-label {
+  display: inline-block;
+  background: var(--blurple);
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; padding: 6px 16px; border-radius: 50px;
+  margin-bottom: 28px;
+}
+.cover-title {
+  font-size: 64px; font-weight: 800; line-height: 1.05; margin-bottom: 16px;
+}
+.cover-title em { color: var(--blurple); font-style: normal; }
+.cover-sub {
+  font-size: 18px; color: var(--muted); margin-bottom: 40px; line-height: 1.6;
+}
+.cover-tags { display: flex; gap: 10px; flex-wrap: wrap; }
+.cover-tag {
+  border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 7px 16px;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+}
+
+/* ══ 슬라이드 2 — 기능 ══ */
+.feat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+.feat-card {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 20px;
+}
+.feat-icon {
+  font-size: 22px; margin-bottom: 10px;
+}
+.feat-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.feat-card p  { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+/* ══ 슬라이드 3 — 기술 스택 ══ */
+.stack-row { display: flex; flex-direction: column; gap: 20px; }
+.stack-group-label {
+  font-size: 12px; font-weight: 700; color: var(--green);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 7px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; }
+.chip-fill    { background: var(--blurple); color: var(--ink); }
+.chip-outline { border: 1.5px solid var(--blurple); color: var(--blurple); }
+.chip-green   { border: 1.5px solid var(--green); color: var(--green); }
+
+/* ══ 슬라이드 4 — 개발 과정 ══ */
+.step-list { display: flex; flex-direction: column; gap: 18px; }
+.step-item { display: flex; gap: 18px; align-items: flex-start; }
+.step-num {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: var(--blurple); color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; flex-shrink: 0;
+}
+.step-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.step-body p  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+/* ══ 슬라이드 5 — 어려웠던 점 ══ */
+.prob-list { display: flex; flex-direction: column; gap: 18px; }
+.prob-card {
+  background: var(--surface);
+  border-radius: 16px; padding: 20px 24px;
+  border-left: 4px solid var(--magenta);
+}
+.prob-card .tag {
+  font-size: 11px; font-weight: 700; color: var(--magenta);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;
+}
+.prob-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.prob-card p  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+.prob-card .solve {
+  display: inline-block; color: var(--green);
+  font-size: 12px; font-weight: 700; margin-top: 10px;
+}
+
+/* ══ 슬라이드 6 — 결과 ══ */
+.result-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 28px;
+}
+.result-card {
+  background: var(--surface);
+  border-radius: 16px; padding: 22px;
+}
+.result-card h3 { font-size: 14px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+.result-card p  { font-size: 15px; font-weight: 700; line-height: 1.6; }
+.result-card p em { color: var(--green); font-style: normal; }
+.deploy-box {
+  background: var(--blurple);
+  border-radius: 16px; padding: 22px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.deploy-box span { font-size: 15px; font-weight: 700; }
+.deploy-box a {
+  background: var(--ink); color: #000;
+  font-size: 13px; font-weight: 700;
+  padding: 8px 20px; border-radius: 10px;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+<div id="pb"></div>
+
+<div id="track">
+
+  <!-- 1. 표지 -->
+  <div class="slide">
+    <div class="inner">
+      <div class="cover-label">Project 01</div>
+      <div class="cover-title">영화 소개<br><em>웹사이트</em></div>
+      <div class="cover-sub">
+        TMDB API를 활용해 영화 정보를 제공하는 단일 파일 웹 애플리케이션<br>
+        검색, 장르 필터, 예고편, 댓글까지 한 페이지에서
+      </div>
+      <div class="cover-tags">
+        <span class="cover-tag">HTML / CSS / JS</span>
+        <span class="cover-tag">TMDB API</span>
+        <span class="cover-tag">YouTube API</span>
+        <span class="cover-tag">localStorage</span>
+        <span class="cover-tag">GitHub Pages</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 주요 기능 -->
+  <div class="slide">
+    <div class="inner">
+      <div class="eyebrow">02 · Features</div>
+      <div class="section-title">주요 <em>기능</em></div>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-icon">🎬</div>
+          <h3>인기 영화 목록</h3>
+          <p>TMDB 인기 순위 기준 포스터·제목·평점을 그리드로 표시</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🔍</div>
+          <h3>실시간 검색</h3>
+          <p>입력 중 자동 검색 (디바운스 480ms 적용)</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🏷</div>
+          <h3>장르 필터</h3>
+          <p>장르 탭 클릭 시 해당 장르 영화 목록으로 즉시 전환</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">▶</div>
+          <h3>예고편 연동</h3>
+          <p>한국어 / 영어 영상 병렬 조회 후 YouTube 바로가기 제공</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">💬</div>
+          <h3>댓글 기능</h3>
+          <p>영화별 댓글 작성·삭제, localStorage로 로컬 저장</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🎥</div>
+          <h3>비슷한 영화 추천</h3>
+          <p>상세 모달 하단에 유사 영화 목록 가로 스크롤로 제공</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 기술 스택 -->
+  <div class="slide">
+    <div class="inner">
+      <div class="eyebrow">03 · Stack</div>
+      <div class="section-title">사용한 <em>기술</em></div>
+      <div class="stack-row">
+        <div>
+          <div class="stack-group-label">프론트엔드</div>
+          <div class="chips">
+            <span class="chip chip-fill">HTML5</span>
+            <span class="chip chip-fill">CSS3</span>
+            <span class="chip chip-fill">Vanilla JavaScript</span>
+          </div>
+        </div>
+        <div>
+          <div class="stack-group-label">외부 API</div>
+          <div class="chips">
+            <span class="chip chip-outline">TMDB API v3</span>
+            <span class="chip chip-outline">YouTube Data API</span>
+          </div>
+        </div>
+        <div>
+          <div class="stack-group-label">저장 & 배포</div>
+          <div class="chips">
+            <span class="chip chip-green">localStorage</span>
+            <span class="chip chip-green">GitHub Pages</span>
+          </div>
+        </div>
+        <div>
+          <div class="stack-group-label">특이사항</div>
+          <div class="chips">
+            <span class="chip chip-outline">단일 HTML 파일 (no framework)</span>
+            <span class="chip chip-outline">외부 라이브러리 0개</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 개발 순서 -->
+  <div class="slide">
+    <div class="inner">
+      <div class="eyebrow">04 · Process</div>
+      <div class="section-title">개발 <em>순서</em></div>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>레이아웃 설계</h3>
+            <p>헤더, 영화 그리드, 모달 구조를 먼저 잡고 다크 테마 CSS 기본 스타일 작성</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>TMDB API 연동</h3>
+            <p>인기 영화 목록 fetch → 카드 렌더링 → 장르 목록 불러와 필터 버튼 생성</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>검색 & 상세 모달</h3>
+            <p>디바운스 검색 구현, 영화 클릭 시 줄거리·평점·장르·예고편·유사 영화 표시</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>댓글 기능</h3>
+            <p>영화 ID를 키로 localStorage에 댓글 저장·삭제 구현</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h3>배포</h3>
+            <p>GitHub Add file 업로드 후 GitHub Pages 활성화해 링크 제출</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 업데이트 사항 -->
+  <div class="slide">
+    <div class="inner">
+      <div class="eyebrow">05 · Update</div>
+      <div class="section-title">업데이트 <em>사항</em></div>
+      <div class="prob-list">
+        <div class="prob-card" style="border-left-color: var(--green);">
+          <div class="tag" style="color: var(--green);">NEW</div>
+          <h3>예고편 관람 여부 표시</h3>
+          <p>예고편 보러가기 버튼을 클릭한 영화는 카드에 빨간 테두리가 생겨 이미 본 영화를 구분할 수 있다. localStorage에 저장되기 때문에 페이지를 새로고침해도 유지된다.</p>
+          <div class="solve" style="color: var(--green);">→ localStorage · dataset · classList 활용</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 결과 -->
+  <div class="slide">
+    <div class="inner">
+      <div class="eyebrow">06 · Result</div>
+      <div class="section-title">프로젝트 <em>결과</em></div>
+      <div class="result-grid">
+        <div class="result-card">
+          <h3>파일 구성</h3>
+          <p>단일 파일 <em>movie.html</em><br>HTML + CSS + JS 인라인</p>
+        </div>
+        <div class="result-card">
+          <h3>외부 의존성</h3>
+          <p>프레임워크 <em>0개</em><br>라이브러리 <em>0개</em></p>
+        </div>
+        <div class="result-card">
+          <h3>구현 기능</h3>
+          <p>인기목록 · 검색 · 장르<br>예고편 · 댓글 · 추천 <em>6종</em></p>
+        </div>
+        <div class="result-card">
+          <h3>배포</h3>
+          <p><em>GitHub Pages</em>로 공개<br>링크 제출 완료</p>
+        </div>
+      </div>
+      <div class="deploy-box">
+        <span>배포 주소 · GitHub Pages</span>
+        <a href="https://l96997566-creator.github.io/0701-.html/movie.html" target="_blank">사이트 바로가기 →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav">
+  <button class="nav-btn" id="prevBtn" onclick="go(-1)" disabled>← 이전</button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="nextBtn" onclick="go(1)">다음 →</button>
+</div>
+
+<script>
+const TOTAL = 6;
+let cur = 0;
+
+const track  = document.getElementById('track');
+const pb     = document.getElementById('pb');
+const prev   = document.getElementById('prevBtn');
+const next   = document.getElementById('nextBtn');
+const dotsEl = document.getElementById('dots');
+
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(idx) {
+  cur = idx;
+  track.style.transform = `translateX(calc(-${cur} * 100vw))`;
+  pb.style.width = `${((cur + 1) / TOTAL) * 100}%`;
+  prev.disabled = cur === 0;
+  next.disabled = cur === TOTAL - 1;
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+}
+
+function go(dir) {
+  const n = cur + dir;
+  if (n >= 0 && n < TOTAL) goTo(n);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') go(1);
+  if (e.key === 'ArrowLeft')  go(-1);
+});
+
+goTo(0);
+</script>
+</body>
+</html>
